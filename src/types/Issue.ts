@@ -14,4 +14,9 @@ export type  Issue = {
     login: string;
     id: number;
   } | null;
+  labels: Label[],
+}
+
+type Label = {
+  color: string
 }

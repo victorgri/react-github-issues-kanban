@@ -1,3 +1,6 @@
+form {
+  padding: 20px 0;
+}
 
 .column {
   margin-top: 20px;
@@ -9,11 +12,6 @@
   border-radius: 20px;
 }
 
-.column-container {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
-}
 
 .column__title {
   text-align: center;
@@ -24,15 +22,19 @@
   border: 1px solid #333;
   list-style: none;
   padding: 5px;
-  width: 100%;
-  background-color: #a74d4d;
+  width: 323px;
+  white-space: wrap;
+  word-break: break-all;
+  background-color: #de0a0a;
 }
 .inprogress__task {
   border-radius: 10px;
   border: 1px solid #333;
   list-style: none;
   padding: 5px;
-  width: 100%;
+  width: 323px;
+  white-space: wrap;
+  word-break: break-all;
   background-color: #f4e008;
 }
 
@@ -41,7 +43,8 @@
   border: 1px solid #333;
   list-style: none;
   padding: 5px;
-  width: 100%;
+  width: 323px;
+  white-space: wrap;
+  word-break: break-all;
   background-color: #56cf67;
 }
-

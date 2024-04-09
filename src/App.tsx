@@ -1,17 +1,20 @@
 import { useState } from "react";
-import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
-import { Issue } from "./types/Issue";
-import { Column } from "./types/Column";
+import { DropResult } from "react-beautiful-dnd";
+import { ColumnType } from "./types/Column";
+import { FormInput } from "./components/Form";
+import { Columns } from "./components/Columns";
+import { Container } from "react-bootstrap";
 
 export const App = () => {
   const [repoUrl, setRepoUrl] = useState("");
-  const [issues, setIssues] = useState<Issue[]>([]);
   const [error, setError] = useState("");
-  const [columns] = useState<Column[]>([
-    { columnTitle: "ToDo", items: issues },
+  const [columns, setColumns] = useState<ColumnType[]>([
+    { columnTitle: "ToDo", items: [] },
     { columnTitle: "In Progress", items: [] },
     { columnTitle: "Done", items: [] },
   ]);
+  const [owner, setOwner] = useState("");
+  const [repo, setRepo] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,6 +32,8 @@ export const App = () => {
     const urlParts = repoUrl.split("/");
     const owner = urlParts[3];
     const repoName = urlParts[4];
+    setOwner(owner);
+    setRepo(repoName);
 
     // Construct the API URL for fetching issues
     const apiUrl = `https://api.github.com/repos/${owner}/${repoName}/issues`;
@@ -39,88 +44,90 @@ export const App = () => {
         throw new Error("Failed to fetch issues");
       }
       const data = await response.json();
-      setIssues(data);
+      if (data.length === 0) {
+        setError("No issues found");
+        return;
+      }
+      setColumns([
+        { columnTitle: "ToDo", items: data },
+        { columnTitle: "In Progress", items: [] },
+        { columnTitle: "Done", items: [] },
+      ]);
+      console.log(data);
+
       setError("");
     } catch (error) {
       console.error(error);
       setError("Failed to fetch issues");
     }
-
   };
 
-const handleDragEnd = (result: DropResult) => {
-  if (!result.destination) {
-    return;
-  }
+  const handleDragEnd = (result: DropResult) => {
+    if (!result.destination) {
+      return;
+    }
 
-  const startIndex = result.source.index;
-  const endIndex = result.destination.index;
+    const { source, destination } = result;
 
-  const updatedIssues = Array.from(issues);
+    // Отримання початкового та кінцевого індексів переміщення
+    const startIndex = source.index;
+    const endIndex = destination.index;
 
-  const [removed] = updatedIssues.splice(startIndex, 1);
+    // Отримання джерела та призначення стовпців за їх droppableId
+    const sourceColumnIndex = columns.findIndex(
+      (column) => column.columnTitle === source.droppableId
+    );
+    const destinationColumnIndex = columns.findIndex(
+      (column) => column.columnTitle === destination.droppableId
+    );
 
-  updatedIssues.splice(endIndex, 0, removed);
+    // Перевірка, чи отримані стовпці та їх індекси
+    if (
+      sourceColumnIndex === -1 ||
+      destinationColumnIndex === -1 ||
+      startIndex === endIndex
+    ) {
+      return;
+    }
 
-  setIssues(updatedIssues);
-};
-  
-  console.log(issues);
+    const updatedColumns = [...columns];
+    const [removed] = updatedColumns[sourceColumnIndex].items.splice(
+      startIndex,
+      1
+    );
+    updatedColumns[destinationColumnIndex].items.splice(endIndex, 0, removed);
+
+    // Оновлення стану змінених стовпців
+    setColumns(updatedColumns);
+  };
 
   return (
     <div>
-      <form onSubmit={handleSubmit}>
-        <input
-          type="text"
-          value={repoUrl}
-          onChange={(e) => setRepoUrl(e.target.value)}
-          placeholder="Enter GitHub repo URL"
-        />
-        <button type="submit">Fetch Issues</button>
-      </form>
+      <FormInput
+        onSubmit={handleSubmit}
+        repoUrl={repoUrl}
+        setRepoUrl={setRepoUrl}
+      />
+
+      <Container>
+        <p>{`${owner} > ${repo}`}</p>
+        <p>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            fill="orange"
+          >
+            <path d="M8 .2l4.9 15.2L0 6h16L3.1 15.4z" />
+          </svg>
+        </p>
+      </Container>
+
       {error && <p style={{ color: "red" }}>{error}</p>}
-      <DragDropContext onDragEnd={handleDragEnd}>
-        <div className="column-container">
-          {columns.map(({columnTitle, items}) => (
-            <Droppable droppableId={columnTitle} key={columnTitle}>
-              {(provided) => (
-                <ul
-                  className="column"
-                  ref={provided.innerRef}
-                  {...provided.droppableProps}
-                >
-                  <h2 className="column__title">{columnTitle}</h2>
-                  {items.map((issue, index) => (
-                    <Draggable
-                      key={issue.id}
-                      draggableId={issue.id.toString()}
-                      index={index}
-                    >
-                      {(provided) => (
-                        <li
-                          className={`${columnTitle
-                            .split(" ")
-                            .join("")
-                            .toLowerCase()}__task`}
-                          ref={provided.innerRef}
-                          {...provided.draggableProps}
-                          {...provided.dragHandleProps}
-                        >
-                          {issue.title}
-                        </li>
-                      )}
-                      
-                    </Draggable>
-                  ))}
-                  {provided.placeholder}
-                </ul>
-              )}
-            </Droppable>
-          ))}
-        </div>
-      </DragDropContext>
+      <Columns
+        handleDragEnd={handleDragEnd}
+        columns={columns}
+      />
     </div>
   );
-}
-
-
+};

@@ -1,6 +1,6 @@
 import { Issue } from "./Issue"
 
-export type Column = {
+export type ColumnType = {
   columnTitle: string,
   items: Issue[],
 };
